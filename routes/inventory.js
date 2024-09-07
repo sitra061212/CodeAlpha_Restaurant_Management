@@ -3,8 +3,8 @@ const router = Router();
 import auth from '../middleware/auth.js';
 import InventoryItem from '../models/InventoryItem.js';
 
-// Create a new inventory item
-router.post('/', auth, async (req, res) => {
+// Create a new inventory item (admin only)
+router.post('/', auth('admin'), async (req, res) => {
   const { name, quantity, unit, reorderLevel } = req.body;
 
   try {
@@ -17,8 +17,8 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-// Get all inventory items
-router.get('/', auth, async (req, res) => {
+// Get all inventory items (admin or user)
+router.get('/', auth(), async (req, res) => {
   try {
     const inventoryItems = await InventoryItem.find();
     res.json(inventoryItems);
@@ -28,18 +28,18 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-// Update inventory item by ID
-router.put('/:id', auth, async (req, res) => {
+// Update inventory item by ID (admin only)
+router.put('/:id', auth('admin'), async (req, res) => {
   const { name, quantity, unit, reorderLevel } = req.body;
 
   try {
     let inventoryItem = await InventoryItem.findById(req.params.id);
     if (!inventoryItem) return res.status(404).json({ msg: 'Inventory item not found' });
 
-    inventoryItem.name = name || inventoryItem.name;
-    inventoryItem.quantity = quantity || inventoryItem.quantity;
-    inventoryItem.unit = unit || inventoryItem.unit;
-    inventoryItem.reorderLevel = reorderLevel || inventoryItem.reorderLevel;
+    if (name) inventoryItem.name = name;
+    if (quantity) inventoryItem.quantity = quantity;
+    if (unit) inventoryItem.unit = unit;
+    if (reorderLevel) inventoryItem.reorderLevel = reorderLevel;
 
     await inventoryItem.save();
     res.json(inventoryItem);
@@ -49,18 +49,22 @@ router.put('/:id', auth, async (req, res) => {
   }
 });
 
-// Delete inventory item by ID
-router.delete('/:id', auth, async (req, res) => {
+// Delete inventory item by ID (admin only)
+// Delete inventory item by ID (admin only)
+router.delete('/:id', auth('admin'), async (req, res) => {
   try {
     const inventoryItem = await InventoryItem.findById(req.params.id);
     if (!inventoryItem) return res.status(404).json({ msg: 'Inventory item not found' });
 
-    await inventoryItem.remove();
+    // Use findByIdAndDelete to delete the item
+    await InventoryItem.findByIdAndDelete(req.params.id);
+
     res.json({ msg: 'Inventory item removed' });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');
   }
 });
+
 
 export default router;
