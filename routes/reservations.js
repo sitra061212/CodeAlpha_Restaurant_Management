@@ -3,13 +3,13 @@ const router = Router();
 import auth from '../middleware/auth.js';
 import Reservation from '../models/Reservation.js';
 
-// Create a new reservation
-router.post('/', auth, async (req, res) => {
+// Create a new reservation (authenticated users)
+router.post('/', auth(), async (req, res) => {
   const { tableNumber, date, time, guests } = req.body;
 
   try {
     const newReservation = new Reservation({
-      user: req.user.id,
+      user: req.user.id,  // Attach user from the request
       tableNumber,
       date,
       time,
@@ -25,11 +25,10 @@ router.post('/', auth, async (req, res) => {
 });
 
 // Get all reservations (admin only)
-router.get('/', auth, async (req, res) => {
+router.get('/', auth('admin'), async (req, res) => {
   try {
-    if (req.user.role !== 'admin') return res.status(403).json({ msg: 'Access denied' });
-
-    const reservations = await Reservation.find().populate('user', ['name']);
+    const reservations = await Reservation.find()
+      .populate('user', ['name']);  // Populate user details
     res.json(reservations);
   } catch (err) {
     console.error(err.message);
@@ -37,8 +36,8 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-// Get reservations by user
-router.get('/my-reservations', auth, async (req, res) => {
+// Get current user's reservations (authenticated users)
+router.get('/my-reservations', auth(), async (req, res) => {
   try {
     const reservations = await Reservation.find({ user: req.user.id });
     res.json(reservations);
@@ -49,12 +48,10 @@ router.get('/my-reservations', auth, async (req, res) => {
 });
 
 // Update reservation status by ID (admin only)
-router.put('/:id', auth, async (req, res) => {
+router.put('/:id', auth('admin'), async (req, res) => {
   const { status } = req.body;
 
   try {
-    if (req.user.role !== 'admin') return res.status(403).json({ msg: 'Access denied' });
-
     let reservation = await Reservation.findById(req.params.id);
     if (!reservation) return res.status(404).json({ msg: 'Reservation not found' });
 
