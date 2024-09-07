@@ -4,21 +4,31 @@ import auth from '../middleware/auth.js';
 import Order from '../models/Order.js';
 import MenuItem from '../models/MenuItem.js';
 
-// Create a new order
-router.post('/', auth, async (req, res) => {
+// Create a new order (authenticated users)
+router.post('/', auth(), async (req, res) => {
+  console.log('Incoming Request:', req.body);  // Log request body
   const { items } = req.body;
 
   try {
     let totalPrice = 0;
-    const orderItems = [];
 
-    for (let item of items) {
-      const menuItem = await MenuItem.findById(item.menuItem);
-      if (!menuItem) return res.status(404).json({ msg: 'Menu item not found' });
-      totalPrice += menuItem.price * item.quantity;
-      orderItems.push({ menuItem: menuItem.id, quantity: item.quantity });
+    // Parallelize menu item lookups
+    const menuItems = await Promise.all(items.map(item => MenuItem.findById(item.menuItem)));
+
+    // Check if any menu item is not found
+    for (let i = 0; i < menuItems.length; i++) {
+      if (!menuItems[i]) {
+        return res.status(404).json({ msg: `Menu item with ID ${items[i].menuItem} not found` });
+      }
     }
 
+    // Calculate total price and prepare order items
+    const orderItems = items.map((item, index) => {
+      totalPrice += menuItems[index].price * item.quantity;
+      return { menuItem: menuItems[index].id, quantity: item.quantity };
+    });
+
+    // Create and save new order
     const newOrder = new Order({
       user: req.user.id,
       items: orderItems,
@@ -33,12 +43,13 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-// Get all orders (admin only)
-router.get('/', auth, async (req, res) => {
-  try {
-    if (req.user.role !== 'admin') return res.status(403).json({ msg: 'Access denied' });
 
-    const orders = await Order.find().populate('user', ['name']).populate('items.menuItem', ['name', 'price']);
+// Get all orders (admin only)
+router.get('/', auth('admin'), async (req, res) => {
+  try {
+    const orders = await Order.find()
+      .populate('user', ['name'])  // Populate user details
+      .populate('items.menuItem', ['name', 'price']);  // Populate menu item details
     res.json(orders);
   } catch (err) {
     console.error(err.message);
@@ -46,10 +57,11 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-// Get orders by user
-router.get('/my-orders', auth, async (req, res) => {
+// Get current user's orders (authenticated users)
+router.get('/my-orders', auth(), async (req, res) => {
   try {
-    const orders = await Order.find({ user: req.user.id }).populate('items.menuItem', ['name', 'price']);
+    const orders = await Order.find({ user: req.user.id })
+      .populate('items.menuItem', ['name', 'price']);  // Populate menu item details
     res.json(orders);
   } catch (err) {
     console.error(err.message);
@@ -58,15 +70,14 @@ router.get('/my-orders', auth, async (req, res) => {
 });
 
 // Update order status by ID (admin only)
-router.put('/:id', auth, async (req, res) => {
+router.put('/:id', auth('admin'), async (req, res) => {
   const { status } = req.body;
 
   try {
-    if (req.user.role !== 'admin') return res.status(403).json({ msg: 'Access denied' });
-
     let order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ msg: 'Order not found' });
 
+    // Update the order status
     order.status = status || order.status;
 
     await order.save();
