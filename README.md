@@ -33,7 +33,7 @@ Make sure you have the following installed:
 
 1. Clone the repository:
    ```
-   git clone https://github.com/yourusername/restaurant-management.git
+   git clone https://github.com/sitra061212/CodeAlpha_Restaurant_Management.git
    cd restaurant-management
    ```
 
