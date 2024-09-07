@@ -1,31 +1,51 @@
 import { Router } from 'express';
 const router = Router();
-import pkg from 'bcryptjs';
-const { genSalt, hash, compare } = pkg;
-import pkg2 from 'jsonwebtoken';
-const { sign } = pkg2;
-import User from '../models/User.js';
+import bcrypt from 'bcryptjs'; // Password hashing utility
+import jwt from 'jsonwebtoken'; // JWT utility
+import User from '../models/User.js'; // User model
 
-// Register user
+// Register a new user
 router.post('/register', async (req, res) => {
   const { name, email, password, role } = req.body;
 
   try {
+    // Check if user already exists
     let user = await User.findOne({ email });
     if (user) return res.status(400).json({ msg: 'User already exists' });
 
-    user = new User({ name, email, password, role });
+    // Create a new user object
+    user = new User({
+      name,
+      email,
+      password,
+      role
+    });
 
-    const salt = await genSalt(10);
-    user.password = await hash(password, salt);
+    // Hash the user's password
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(password, salt);
 
+    // Save user to database
     await user.save();
 
-    const payload = { user: { id: user.id, role: user.role } };
-    sign(payload, 'your_jwt_secret', { expiresIn: 360000 }, (err, token) => {
-      if (err) throw err;
-      res.json({ token });
-    });
+    // Create JWT payload
+    const payload = {
+      user: {
+        id: user.id,
+        role: user.role
+      }
+    };
+
+    // Sign the JWT token
+    jwt.sign(
+      payload,
+      process.env.JWT_SECRET,
+      { expiresIn: 360000 },
+      (err, token) => {
+        if (err) throw err;
+        res.json({ token });
+      }
+    );
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');
@@ -37,17 +57,32 @@ router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
   try {
+    // Check if user exists
     let user = await User.findOne({ email });
     if (!user) return res.status(400).json({ msg: 'Invalid credentials' });
 
-    const isMatch = await compare(password, user.password);
+    // Compare provided password with hashed password
+    const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ msg: 'Invalid credentials' });
 
-    const payload = { user: { id: user.id, role: user.role } };
-    sign(payload, 'your_jwt_secret', { expiresIn: 360000 }, (err, token) => {
-      if (err) throw err;
-      res.json({ token });
-    });
+    // Create JWT payload
+    const payload = {
+      user: {
+        id: user.id,
+        role: user.role
+      }
+    };
+
+    // Sign the JWT token
+    jwt.sign(
+      payload,
+      process.env.JWT_SECRET,
+      { expiresIn: 360000 },
+      (err, token) => {
+        if (err) throw err;
+        res.json({ token });
+      }
+    );
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');
