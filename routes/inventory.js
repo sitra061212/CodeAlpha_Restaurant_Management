@@ -50,7 +50,6 @@ router.put('/:id', auth('admin'), async (req, res) => {
 });
 
 // Delete inventory item by ID (admin only)
-// Delete inventory item by ID (admin only)
 router.delete('/:id', auth('admin'), async (req, res) => {
   try {
     const inventoryItem = await InventoryItem.findById(req.params.id);

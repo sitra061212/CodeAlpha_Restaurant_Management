@@ -9,7 +9,7 @@ router.post('/', auth(), async (req, res) => {
 
   try {
     const newReservation = new Reservation({
-      user: req.user.id,  // Attach user from the request
+      user: req.user.id,  
       tableNumber,
       date,
       time,
@@ -28,7 +28,7 @@ router.post('/', auth(), async (req, res) => {
 router.get('/', auth('admin'), async (req, res) => {
   try {
     const reservations = await Reservation.find()
-      .populate('user', ['name']);  // Populate user details
+      .populate('user', ['name']);  
     res.json(reservations);
   } catch (err) {
     console.error(err.message);

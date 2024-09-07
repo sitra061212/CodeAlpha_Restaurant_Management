@@ -14,18 +14,14 @@ export default function (requiredRole = null) {
       const decoded = verify(token, process.env.JWT_SECRET);
       req.user = decoded.user;
 
-      // Log user details for debugging
-      console.log('Authenticated user:', req.user);
-
       // If a specific role is required, check if the user has it
       if (requiredRole && req.user.role !== requiredRole) {
         return res.status(403).json({ msg: 'Access denied. Insufficient permissions' });
       }
 
-      // If all checks pass, continue to the next middleware or route handler
       next();
     } catch (err) {
-      console.error('Token verification error:', err); // Log the error for debugging
+      console.error('Token verification error:', err); 
       res.status(401).json({ msg: 'Token is not valid' });
     }
   };

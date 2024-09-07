@@ -6,13 +6,12 @@ import MenuItem from '../models/MenuItem.js';
 
 // Create a new order (authenticated users)
 router.post('/', auth(), async (req, res) => {
-  console.log('Incoming Request:', req.body);  // Log request body
+  console.log('Incoming Request:', req.body);  
   const { items } = req.body;
 
   try {
     let totalPrice = 0;
 
-    // Parallelize menu item lookups
     const menuItems = await Promise.all(items.map(item => MenuItem.findById(item.menuItem)));
 
     // Check if any menu item is not found
@@ -48,8 +47,8 @@ router.post('/', auth(), async (req, res) => {
 router.get('/', auth('admin'), async (req, res) => {
   try {
     const orders = await Order.find()
-      .populate('user', ['name'])  // Populate user details
-      .populate('items.menuItem', ['name', 'price']);  // Populate menu item details
+      .populate('user', ['name'])  
+      .populate('items.menuItem', ['name', 'price']); 
     res.json(orders);
   } catch (err) {
     console.error(err.message);
@@ -61,7 +60,7 @@ router.get('/', auth('admin'), async (req, res) => {
 router.get('/my-orders', auth(), async (req, res) => {
   try {
     const orders = await Order.find({ user: req.user.id })
-      .populate('items.menuItem', ['name', 'price']);  // Populate menu item details
+      .populate('items.menuItem', ['name', 'price']);  
     res.json(orders);
   } catch (err) {
     console.error(err.message);

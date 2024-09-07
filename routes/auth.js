@@ -1,19 +1,17 @@
 import { Router } from 'express';
 const router = Router();
-import bcrypt from 'bcryptjs'; // Password hashing utility
-import jwt from 'jsonwebtoken'; // JWT utility
-import User from '../models/User.js'; // User model
+import bcrypt from 'bcryptjs'; 
+import jwt from 'jsonwebtoken'; 
+import User from '../models/User.js'; 
 
 // Register a new user
 router.post('/register', async (req, res) => {
   const { name, email, password, role } = req.body;
 
   try {
-    // Check if user already exists
     let user = await User.findOne({ email });
     if (user) return res.status(400).json({ msg: 'User already exists' });
 
-    // Create a new user object
     user = new User({
       name,
       email,
@@ -21,7 +19,6 @@ router.post('/register', async (req, res) => {
       role
     });
 
-    // Hash the user's password
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(password, salt);
 
@@ -61,11 +58,9 @@ router.post('/login', async (req, res) => {
     let user = await User.findOne({ email });
     if (!user) return res.status(400).json({ msg: 'Invalid credentials' });
 
-    // Compare provided password with hashed password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ msg: 'Invalid credentials' });
 
-    // Create JWT payload
     const payload = {
       user: {
         id: user.id,
@@ -73,7 +68,6 @@ router.post('/login', async (req, res) => {
       }
     };
 
-    // Sign the JWT token
     jwt.sign(
       payload,
       process.env.JWT_SECRET,
