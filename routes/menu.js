@@ -3,8 +3,8 @@ const router = Router();
 import auth from '../middleware/auth.js';
 import MenuItem from '../models/MenuItem.js';
 
-// Create a new menu item
-router.post('/', auth, async (req, res) => {
+// Create a new menu item (admin only)
+router.post('/', auth('admin'), async (req, res) => {
   const { name, price, description, category, inStock } = req.body;
 
   try {
@@ -17,7 +17,7 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-// Get all menu items
+// Get all menu items (no role required)
 router.get('/', async (req, res) => {
   try {
     const menuItems = await MenuItem.find();
@@ -28,7 +28,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get menu item by ID
+// Get menu item by ID (no role required)
 router.get('/:id', async (req, res) => {
   try {
     const menuItem = await MenuItem.findById(req.params.id);
@@ -40,8 +40,8 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Update menu item by ID
-router.put('/:id', auth, async (req, res) => {
+// Update menu item by ID (admin only)
+router.put('/:id', auth('admin'), async (req, res) => {
   const { name, price, description, category, inStock } = req.body;
 
   try {
@@ -62,8 +62,8 @@ router.put('/:id', auth, async (req, res) => {
   }
 });
 
-// Delete menu item by ID
-router.delete('/:id', auth, async (req, res) => {
+// Delete menu item by ID (admin only)
+router.delete('/:id', auth('admin'), async (req, res) => {
   try {
     const menuItem = await MenuItem.findById(req.params.id);
     if (!menuItem) return res.status(404).json({ msg: 'Menu item not found' });
